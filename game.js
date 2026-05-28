@@ -75,7 +75,7 @@ function create() {
         score++;
         updateScoreDisplay();
         
-        // Efek suara
+        // Efek suara lebih kencang
         if (catchSound && catchSound.play) {
             catchSound.play();
         }
@@ -124,7 +124,7 @@ function create() {
     // --- KONTROL KEYBOARD ---
     cursors = this.input.keyboard.createCursorKeys();
     
-    // --- SUARA SEDERHANA ---
+    // --- SUARA LEBIH KENCANG (VOLUME 0.45) ---
     try {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContextClass();
@@ -134,19 +134,26 @@ function create() {
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
+                
                 const osc = audioCtx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.value = 320;
                 const gain = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.value = 380; // nada lebih tinggi
+                
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                gain.gain.value = 0.15;
+                
+                // VOLUME 0.45 (sebelumnya 0.15 → 3x lebih kencang)
+                gain.gain.value = 0.45;
+                
                 osc.start();
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
                 osc.stop(audioCtx.currentTime + 0.2);
             }
         };
     } catch(e) {
+        console.log("Web Audio tidak didukung");
         catchSound = null;
     }
     
@@ -170,20 +177,18 @@ function create() {
     }
 }
 
-// Fungsi spawn bantal - NATURAL, tanpa efek membesar
+// Fungsi spawn bantal - NATURAL
 function spawnPillow() {
     if (!bantalGroup || !bantalGroup.scene) return;
     const scene = bantalGroup.scene;
     const randX = Phaser.Math.Between(40, scene.scale.width - 40);
     
-    // Muncul dari Y = -20 (di luar canvas, jadi terlihat natural jatuh dari atas)
     let pillow = bantalGroup.create(randX, -20, 'bantal');
     pillow.setDisplaySize(48, 48);
     pillow.setCircle(22);
     pillow.setBounceY(0.05);
     pillow.setGravityY(200);
     pillow.setCollideWorldBounds(false);
-    // TIDAK ADA TWEEN - bantal langsung jatuh natural
 }
 
 // Update tampilan skor
@@ -193,7 +198,7 @@ function updateScoreDisplay() {
     if (scoreText) scoreText.setText(`Skor: ${score}`);
 }
 
-// Fungsi update per-frame (gerakan keyboard)
+// Fungsi update per-frame
 function update() {
     if (!kasur || !cursors) return;
     
@@ -206,7 +211,7 @@ function update() {
     kasur.x = Phaser.Math.Clamp(kasur.x, 45, this.scale.width - 45);
 }
 
-// Tombol reset dari luar
+// Tombol reset
 document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-button');
     if (resetBtn) {
