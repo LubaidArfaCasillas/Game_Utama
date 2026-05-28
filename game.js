@@ -47,9 +47,13 @@ function preload() {
 function create() {
     const scene = this;
     
-    // --- LATAR BELAKANG ---
+    // --- LATAR BELAKANG (dengan offset agar tidak mepet) ---
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
     bg.setDisplaySize(this.scale.width, this.scale.height);
+    
+    // Tambahkan border/decoration atas agar tidak terasa mepet
+    let topBorder = this.add.rectangle(0, 0, this.scale.width, 8, 0x2c1e12, 0.4);
+    topBorder.setOrigin(0, 0);
     
     // Overlay malam
     const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.2);
@@ -75,12 +79,10 @@ function create() {
         score++;
         updateScoreDisplay();
         
-        // Efek suara lebih kencang
         if (catchSound && catchSound.play) {
             catchSound.play();
         }
         
-        // Efek getar kecil pada kasur
         scene.tweens.add({
             targets: kasurObj,
             y: kasurObj.y - 4,
@@ -90,7 +92,7 @@ function create() {
         });
     });
     
-    // --- SPAWN BANTAL (setiap 1.2 detik) ---
+    // --- SPAWN BANTAL ---
     this.time.addEvent({
         delay: 1200,
         callback: spawnPillow,
@@ -98,14 +100,14 @@ function create() {
         loop: true
     });
     
-    // --- SKOR TEKS ---
-    scoreText = this.add.text(20, 18, 'Skor: 0', {
+    // --- SKOR TEKS (di dalam canvas, tapi tetap rapi) ---
+    scoreText = this.add.text(25, 22, 'Skor: 0', {
         fontFamily: 'monospace',
-        fontSize: '32px',
+        fontSize: '30px',
         backgroundColor: '#000000aa',
-        padding: { x: 12, y: 6 },
+        padding: { x: 14, y: 8 },
         color: '#FFF8E7',
-        borderRadius: 20
+        borderRadius: 24
     }).setScrollFactor(0);
     
     // --- KONTROL: mouse / touch ---
@@ -124,7 +126,7 @@ function create() {
     // --- KONTROL KEYBOARD ---
     cursors = this.input.keyboard.createCursorKeys();
     
-    // --- SUARA LEBIH KENCANG (VOLUME 0.45) ---
+    // --- SUARA ---
     try {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContextClass();
@@ -139,12 +141,10 @@ function create() {
                 const gain = audioCtx.createGain();
                 
                 osc.type = 'sine';
-                osc.frequency.value = 380; // nada lebih tinggi
+                osc.frequency.value = 380;
                 
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
-                
-                // VOLUME 0.45 (sebelumnya 0.15 → 3x lebih kencang)
                 gain.gain.value = 0.45;
                 
                 osc.start();
@@ -157,11 +157,11 @@ function create() {
         catchSound = null;
     }
     
-    // --- HIASAN BINTANG (opsional) ---
+    // --- HIASAN BINTANG (diberi jarak dari tepi) ---
     for(let i = 0; i < 40; i++) {
         let star = this.add.circle(
-            Phaser.Math.Between(10, this.scale.width - 10), 
-            Phaser.Math.Between(10, 120), 
+            Phaser.Math.Between(30, this.scale.width - 30), 
+            Phaser.Math.Between(15, 110), 
             1.5, 
             0xfff5b0, 
             0.6
@@ -177,11 +177,10 @@ function create() {
     }
 }
 
-// Fungsi spawn bantal - NATURAL
 function spawnPillow() {
     if (!bantalGroup || !bantalGroup.scene) return;
     const scene = bantalGroup.scene;
-    const randX = Phaser.Math.Between(40, scene.scale.width - 40);
+    const randX = Phaser.Math.Between(50, scene.scale.width - 50);
     
     let pillow = bantalGroup.create(randX, -20, 'bantal');
     pillow.setDisplaySize(48, 48);
@@ -191,14 +190,12 @@ function spawnPillow() {
     pillow.setCollideWorldBounds(false);
 }
 
-// Update tampilan skor
 function updateScoreDisplay() {
     const domScore = document.getElementById('score-display');
     if (domScore) domScore.innerText = score;
     if (scoreText) scoreText.setText(`Skor: ${score}`);
 }
 
-// Fungsi update per-frame
 function update() {
     if (!kasur || !cursors) return;
     
@@ -208,7 +205,7 @@ function update() {
         kasur.x += 8;
     }
     
-    kasur.x = Phaser.Math.Clamp(kasur.x, 45, this.scale.width - 45);
+    kasur.x = Phaser.Math.Clamp(kasur.x, 50, this.scale.width - 50);
 }
 
 // Tombol reset
