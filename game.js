@@ -44,7 +44,7 @@ function preload() {
     this.load.image('background', 'assets/background.jpg');
     this.load.image('kasur', 'assets/kasur.png');
     this.load.image('bantal', 'assets/bantal.png');
-    this.load.image('bantal2', 'assets/bantal2.png'); // VARIASI BANTAL KEDUA
+    this.load.image('bantal2', 'assets/bantal2.png');
 }
 
 // Fungsi create: atur dunia game
@@ -55,12 +55,40 @@ function create() {
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
     bg.setDisplaySize(this.scale.width, this.scale.height);
     
-    // Tambahkan border/decoration atas agar tidak terasa mepet
-    let topBorder = this.add.rectangle(0, 0, this.scale.width, 8, 0x2c1e12, 0.4);
+    // === DEKORASI ATAS AGAR TIDAK MEPET ===
+    // 1. Border dekoratif atas (seperti bingkai)
+    let topBorder = this.add.rectangle(0, 0, this.scale.width, 12, 0x2c1e12, 0.5);
     topBorder.setOrigin(0, 0);
     
-    // Overlay malam
-    const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.2);
+    // 2. Garis dekoratif tipis
+    let topLine = this.add.rectangle(0, 12, this.scale.width, 2, 0xf5e7d9, 0.6);
+    topLine.setOrigin(0, 0);
+    
+    // 3. Hiasan tambahan (lampu tidur / bulan kecil) di pojok kanan atas
+    let moon = this.add.circle(this.scale.width - 45, 28, 18, 0xfff5b0, 0.7);
+    let moonGlow = this.add.circle(this.scale.width - 45, 28, 24, 0xfff5b0, 0.2);
+    
+    // 4. Hiasan bintang kecil di area atas
+    for(let i = 0; i < 12; i++) {
+        let starDecor = this.add.circle(
+            Phaser.Math.Between(20, this.scale.width - 20), 
+            Phaser.Math.Between(18, 50), 
+            2, 
+            0xfff5b0, 
+            0.5
+        );
+        this.tweens.add({
+            targets: starDecor,
+            alpha: 0.1,
+            duration: 1500 + Math.random() * 2000,
+            yoyo: true,
+            repeat: -1,
+            delay: Math.random() * 2000
+        });
+    }
+    
+    // Overlay malam (tipis)
+    const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.15);
     overlay.setOrigin(0, 0);
     
     // --- KASUR (PEMAIN) ---
@@ -161,11 +189,11 @@ function create() {
         catchSound = null;
     }
     
-    // --- HIASAN BINTANG ---
-    for(let i = 0; i < 40; i++) {
+    // --- HIASAN BINTANG UTAMA (di langit) ---
+    for(let i = 0; i < 35; i++) {
         let star = this.add.circle(
             Phaser.Math.Between(30, this.scale.width - 30), 
-            Phaser.Math.Between(15, 110), 
+            Phaser.Math.Between(20, 100), 
             1.5, 
             0xfff5b0, 
             0.6
@@ -181,13 +209,13 @@ function create() {
     }
 }
 
-// Fungsi spawn bantal - DENGAN VARIASI (acak antara bantal.png dan bantal2.png)
+// Fungsi spawn bantal dengan variasi
 function spawnPillow() {
     if (!bantalGroup || !bantalGroup.scene) return;
     const scene = bantalGroup.scene;
     const randX = Phaser.Math.Between(50, scene.scale.width - 50);
     
-    // Pilih asset bantal secara acak (50% bantal, 50% bantal2)
+    // Pilih asset bantal secara acak
     const randomBantal = BANTAL_ASSETS[Math.floor(Math.random() * BANTAL_ASSETS.length)];
     
     let pillow = bantalGroup.create(randX, -20, randomBantal);

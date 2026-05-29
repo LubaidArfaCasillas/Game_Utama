@@ -12,7 +12,7 @@ body {
     justify-content: center;
     align-items: center;
     font-family: 'Segoe UI', 'Poppins', 'Quicksand', system-ui, sans-serif;
-    padding: 24px;
+    padding: 30px 24px 24px 24px;  /* padding ATAS diperbesar dari 24px → 30px */
 }
 
 .game-wrapper {
@@ -30,7 +30,7 @@ body {
     box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5), 0 0 0 6px #f5e7d9, 0 0 0 12px #b87c4f;
     border-radius: 32px;
     overflow: hidden;
-    margin-top: 10px;
+    margin-top: 15px;      /* Ditambah dari 10px → 15px */
 }
 
 /* PAPAN SKOR - lebih besar dan menarik */
@@ -99,7 +99,7 @@ button:active {
     box-shadow: 0 3px 0 #7a4a1a;
 }
 
-/* PETUNJUK - dengan margin dan padding yang cukup */
+/* PETUNJUK */
 .instruction {
     background: #fff5e6;
     padding: 14px 28px;
@@ -116,7 +116,7 @@ button:active {
 /* Responsive untuk layar kecil */
 @media (max-width: 700px) {
     body {
-        padding: 16px;
+        padding: 20px 16px 16px 16px;  /* padding atas tetap lebih besar */
     }
     
     .game-info {
