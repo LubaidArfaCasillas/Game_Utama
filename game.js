@@ -31,15 +31,21 @@ let scoreText;
 let cursors;
 let catchSound;
 
-// Daftar asset bantal (variasi)
+// Variabel Timer
+let timeLeft = 30; // 30 detik
+let timerText;
+let timerEvent;
+let gameActive = true;
+
+// Daftar asset bantal
 const BANTAL_ASSETS = ['bantal', 'bantal2'];
 
-// Inisialisasi game setelah DOM siap
+// Inisialisasi game
 window.onload = () => {
     game = new Phaser.Game(config);
 };
 
-// Fungsi preload: muat asset
+// Fungsi preload
 function preload() {
     this.load.image('background', 'assets/background.jpg');
     this.load.image('kasur', 'assets/kasur.png');
@@ -47,28 +53,27 @@ function preload() {
     this.load.image('bantal2', 'assets/bantal2.png');
 }
 
-// Fungsi create: atur dunia game
+// Fungsi create
 function create() {
     const scene = this;
+    gameActive = true;
+    timeLeft = 30;
     
     // --- LATAR BELAKANG ---
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
     bg.setDisplaySize(this.scale.width, this.scale.height);
     
-    // === DEKORASI ATAS AGAR TIDAK MEPET ===
-    // 1. Border dekoratif atas (seperti bingkai)
+    // Dekorasi atas
     let topBorder = this.add.rectangle(0, 0, this.scale.width, 12, 0x2c1e12, 0.5);
     topBorder.setOrigin(0, 0);
-    
-    // 2. Garis dekoratif tipis
     let topLine = this.add.rectangle(0, 12, this.scale.width, 2, 0xf5e7d9, 0.6);
     topLine.setOrigin(0, 0);
     
-    // 3. Hiasan tambahan (lampu tidur / bulan kecil) di pojok kanan atas
+    // Hiasan bulan
     let moon = this.add.circle(this.scale.width - 45, 28, 18, 0xfff5b0, 0.7);
     let moonGlow = this.add.circle(this.scale.width - 45, 28, 24, 0xfff5b0, 0.2);
     
-    // 4. Hiasan bintang kecil di area atas
+    // Hiasan bintang dekoratif
     for(let i = 0; i < 12; i++) {
         let starDecor = this.add.circle(
             Phaser.Math.Between(20, this.scale.width - 20), 
@@ -87,11 +92,11 @@ function create() {
         });
     }
     
-    // Overlay malam (tipis)
+    // Overlay malam
     const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.15);
     overlay.setOrigin(0, 0);
     
-    // --- KASUR (PEMAIN) ---
+    // --- KASUR ---
     kasur = this.physics.add.image(this.scale.width / 2, this.scale.height - 70, 'kasur');
     kasur.setCollideWorldBounds(true);
     kasur.setImmovable(true);
@@ -105,8 +110,10 @@ function create() {
         bounceY: 0.1
     });
     
-    // --- TUMBUKAN: kasur vs bantal ---
+    // --- TUMBUKAN ---
     this.physics.add.collider(kasur, bantalGroup, (kasurObj, bantal) => {
+        if (!gameActive) return; // Jika game selesai, tidak bisa dapat poin
+        
         bantal.destroy();
         score++;
         updateScoreDisplay();
@@ -124,7 +131,7 @@ function create() {
         });
     });
     
-    // --- SPAWN BANTAL (dengan variasi) ---
+    // --- SPAWN BANTAL ---
     this.time.addEvent({
         delay: 1200,
         callback: spawnPillow,
@@ -132,30 +139,50 @@ function create() {
         loop: true
     });
     
+    // --- TIMER 30 DETIK ---
+    // Timer display di canvas
+    timerText = this.add.text(this.scale.width - 100, 22, '⏱️ 30', {
+        fontFamily: 'monospace',
+        fontSize: '28px',
+        backgroundColor: '#000000aa',
+        padding: { x: 12, y: 8 },
+        color: '#FFF8E7',
+        borderRadius: 24
+    }).setScrollFactor(0);
+    
+    // Event timer setiap 1 detik
+    timerEvent = this.time.addEvent({
+        delay: 1000,
+        callback: updateTimer,
+        callbackScope: this,
+        loop: true
+    });
+    
     // --- SKOR TEKS ---
     scoreText = this.add.text(25, 22, 'Skor: 0', {
         fontFamily: 'monospace',
-        fontSize: '30px',
+        fontSize: '28px',
         backgroundColor: '#000000aa',
         padding: { x: 14, y: 8 },
         color: '#FFF8E7',
         borderRadius: 24
     }).setScrollFactor(0);
     
-    // --- KONTROL: mouse / touch ---
+    // --- KONTROL ---
     this.input.on('pointermove', (pointer) => {
+        if (!gameActive) return;
         let newX = pointer.worldX;
         newX = Phaser.Math.Clamp(newX, 50, this.scale.width - 50);
         kasur.x = newX;
     });
     
     this.input.on('touchmove', (pointer) => {
+        if (!gameActive) return;
         let newX = pointer.worldX;
         newX = Phaser.Math.Clamp(newX, 50, this.scale.width - 50);
         kasur.x = newX;
     });
     
-    // --- KONTROL KEYBOARD ---
     cursors = this.input.keyboard.createCursorKeys();
     
     // --- SUARA ---
@@ -168,28 +195,23 @@ function create() {
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
-                
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                
                 osc.type = 'sine';
                 osc.frequency.value = 380;
-                
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 gain.gain.value = 0.45;
-                
                 osc.start();
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.2);
                 osc.stop(audioCtx.currentTime + 0.2);
             }
         };
     } catch(e) {
-        console.log("Web Audio tidak didukung");
         catchSound = null;
     }
     
-    // --- HIASAN BINTANG UTAMA (di langit) ---
+    // --- BINTANG LANGIT ---
     for(let i = 0; i < 35; i++) {
         let star = this.add.circle(
             Phaser.Math.Between(30, this.scale.width - 30), 
@@ -209,13 +231,117 @@ function create() {
     }
 }
 
-// Fungsi spawn bantal dengan variasi
+// Fungsi update timer
+function updateTimer() {
+    if (!gameActive) return;
+    
+    timeLeft--;
+    updateTimerDisplay();
+    
+    // Update DOM timer
+    const domTimer = document.getElementById('timer-display');
+    if (domTimer) {
+        domTimer.innerText = timeLeft;
+        
+        // Efek visual di DOM
+        const timerCard = document.querySelector('.timer-card');
+        if (timeLeft <= 10) {
+            timerCard.classList.add('critical');
+        } else if (timeLeft <= 20) {
+            timerCard.classList.add('warning');
+            timerCard.classList.remove('critical');
+        } else {
+            timerCard.classList.remove('warning', 'critical');
+        }
+    }
+    
+    // Update timer di canvas
+    if (timerText) {
+        timerText.setText(`⏱️ ${timeLeft}`);
+        // Warna timer berubah di canvas
+        if (timeLeft <= 5) {
+            timerText.setColor('#ff6666');
+        } else if (timeLeft <= 10) {
+            timerText.setColor('#ffaa66');
+        } else {
+            timerText.setColor('#FFF8E7');
+        }
+    }
+    
+    // Jika waktu habis
+    if (timeLeft <= 0) {
+        endGame();
+    }
+}
+
+// Fungsi mengakhiri game
+function endGame() {
+    if (!gameActive) return;
+    
+    gameActive = false;
+    
+    // Hentikan spawn bantal baru
+    if (timerEvent) {
+        timerEvent.remove();
+    }
+    
+    // Hentikan semua bantal yang bergerak
+    if (bantalGroup) {
+        bantalGroup.setVelocityY(0);
+        bantalGroup.children.iterate(bantal => {
+            if (bantal) {
+                bantal.body.setGravityY(0);
+                bantal.body.setVelocityY(0);
+            }
+        });
+    }
+    
+    // Nonaktifkan kontrol kasur
+    kasur.setImmovable(true);
+    
+    // Tampilkan pesan Game Over
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+    
+    this.add.text(centerX, centerY - 50, '⏰ WAKTU HABIS! ⏰', {
+        fontFamily: 'monospace',
+        fontSize: '36px',
+        backgroundColor: '#000000cc',
+        padding: { x: 20, y: 12 },
+        color: '#ffcc88',
+        borderRadius: 30
+    }).setOrigin(0.5).setScrollFactor(0);
+    
+    this.add.text(centerX, centerY + 20, `Skor Akhir: ${score}`, {
+        fontFamily: 'monospace',
+        fontSize: '32px',
+        backgroundColor: '#000000aa',
+        padding: { x: 20, y: 10 },
+        color: '#FFF8E7',
+        borderRadius: 30
+    }).setOrigin(0.5).setScrollFactor(0);
+    
+    this.add.text(centerX, centerY + 80, 'Klik "MULAI ULANG" untuk bermain lagi', {
+        fontFamily: 'monospace',
+        fontSize: '18px',
+        backgroundColor: '#00000088',
+        padding: { x: 15, y: 8 },
+        color: '#dddddd',
+        borderRadius: 20
+    }).setOrigin(0.5).setScrollFactor(0);
+}
+
+function updateTimerDisplay() {
+    const domTimer = document.getElementById('timer-display');
+    if (domTimer) domTimer.innerText = timeLeft;
+}
+
 function spawnPillow() {
+    if (!gameActive) return;
     if (!bantalGroup || !bantalGroup.scene) return;
+    
     const scene = bantalGroup.scene;
     const randX = Phaser.Math.Between(50, scene.scale.width - 50);
-    
-    // Pilih asset bantal secara acak
     const randomBantal = BANTAL_ASSETS[Math.floor(Math.random() * BANTAL_ASSETS.length)];
     
     let pillow = bantalGroup.create(randX, -20, randomBantal);
@@ -233,6 +359,7 @@ function updateScoreDisplay() {
 }
 
 function update() {
+    if (!gameActive) return;
     if (!kasur || !cursors) return;
     
     if (cursors.left.isDown) {
@@ -251,12 +378,37 @@ document.addEventListener('DOMContentLoaded', () => {
         resetBtn.addEventListener('click', () => {
             if (game && game.scene && game.scene.scenes && game.scene.scenes[0]) {
                 const scene = game.scene.scenes[0];
+                
+                // Hentikan semua event lama
+                if (scene.timerEvent) {
+                    scene.timerEvent.remove();
+                }
+                
+                // Bersihkan bantal
                 if (bantalGroup) {
                     bantalGroup.clear(true, true);
                 }
+                
+                // Reset variabel
                 score = 0;
+                timeLeft = 30;
+                gameActive = true;
+                
+                // Reset DOM
                 updateScoreDisplay();
+                const domTimer = document.getElementById('timer-display');
+                if (domTimer) domTimer.innerText = "30";
+                const timerCard = document.querySelector('.timer-card');
+                if (timerCard) timerCard.classList.remove('warning', 'critical');
+                
+                // Reset posisi kasur
                 if (kasur) kasur.x = config.width / 2;
+                
+                // Restart timer
+                if (scene.timerText) scene.timerText.setText('⏱️ 30');
+                
+                // Hapus pesan game over (dengan me-restart scene)
+                scene.scene.restart();
             }
         });
     }
