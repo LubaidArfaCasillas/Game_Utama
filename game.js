@@ -31,6 +31,9 @@ let scoreText;
 let cursors;
 let catchSound;
 
+// Daftar asset bantal (variasi)
+const BANTAL_ASSETS = ['bantal', 'bantal2'];
+
 // Inisialisasi game setelah DOM siap
 window.onload = () => {
     game = new Phaser.Game(config);
@@ -41,13 +44,14 @@ function preload() {
     this.load.image('background', 'assets/background.jpg');
     this.load.image('kasur', 'assets/kasur.png');
     this.load.image('bantal', 'assets/bantal.png');
+    this.load.image('bantal2', 'assets/bantal2.png'); // VARIASI BANTAL KEDUA
 }
 
 // Fungsi create: atur dunia game
 function create() {
     const scene = this;
     
-    // --- LATAR BELAKANG (dengan offset agar tidak mepet) ---
+    // --- LATAR BELAKANG ---
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
     bg.setDisplaySize(this.scale.width, this.scale.height);
     
@@ -92,7 +96,7 @@ function create() {
         });
     });
     
-    // --- SPAWN BANTAL ---
+    // --- SPAWN BANTAL (dengan variasi) ---
     this.time.addEvent({
         delay: 1200,
         callback: spawnPillow,
@@ -100,7 +104,7 @@ function create() {
         loop: true
     });
     
-    // --- SKOR TEKS (di dalam canvas, tapi tetap rapi) ---
+    // --- SKOR TEKS ---
     scoreText = this.add.text(25, 22, 'Skor: 0', {
         fontFamily: 'monospace',
         fontSize: '30px',
@@ -157,7 +161,7 @@ function create() {
         catchSound = null;
     }
     
-    // --- HIASAN BINTANG (diberi jarak dari tepi) ---
+    // --- HIASAN BINTANG ---
     for(let i = 0; i < 40; i++) {
         let star = this.add.circle(
             Phaser.Math.Between(30, this.scale.width - 30), 
@@ -177,12 +181,16 @@ function create() {
     }
 }
 
+// Fungsi spawn bantal - DENGAN VARIASI (acak antara bantal.png dan bantal2.png)
 function spawnPillow() {
     if (!bantalGroup || !bantalGroup.scene) return;
     const scene = bantalGroup.scene;
     const randX = Phaser.Math.Between(50, scene.scale.width - 50);
     
-    let pillow = bantalGroup.create(randX, -20, 'bantal');
+    // Pilih asset bantal secara acak (50% bantal, 50% bantal2)
+    const randomBantal = BANTAL_ASSETS[Math.floor(Math.random() * BANTAL_ASSETS.length)];
+    
+    let pillow = bantalGroup.create(randX, -20, randomBantal);
     pillow.setDisplaySize(48, 48);
     pillow.setCircle(22);
     pillow.setBounceY(0.05);
