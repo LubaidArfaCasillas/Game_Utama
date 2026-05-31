@@ -132,12 +132,6 @@ button:active {
     border: 1px solid rgba(255,255,200,0.6);
 }
 
-/* Game Over Message di canvas (style via JS) */
-.game-over-text {
-    font-family: 'Segoe UI', monospace;
-    font-weight: bold;
-}
-
 /* Responsive */
 @media (max-width: 750px) {
     body {

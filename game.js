@@ -27,13 +27,11 @@ let game;
 let kasur;
 let bantalGroup;
 let score = 0;
-let scoreText;
 let cursors;
 let catchSound;
 
 // Variabel Timer
-let timeLeft = 30; // 30 detik
-let timerText;
+let timeLeft = 30;
 let timerEvent;
 let gameActive = true;
 
@@ -58,6 +56,12 @@ function create() {
     const scene = this;
     gameActive = true;
     timeLeft = 30;
+    
+    // Reset tampilan timer di DOM
+    const domTimer = document.getElementById('timer-display');
+    if (domTimer) domTimer.innerText = "30";
+    const timerCard = document.querySelector('.timer-card');
+    if (timerCard) timerCard.classList.remove('warning', 'critical');
     
     // --- LATAR BELAKANG ---
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
@@ -112,7 +116,7 @@ function create() {
     
     // --- TUMBUKAN ---
     this.physics.add.collider(kasur, bantalGroup, (kasurObj, bantal) => {
-        if (!gameActive) return; // Jika game selesai, tidak bisa dapat poin
+        if (!gameActive) return;
         
         bantal.destroy();
         score++;
@@ -139,34 +143,13 @@ function create() {
         loop: true
     });
     
-    // --- TIMER 30 DETIK ---
-    // Timer display di canvas
-    timerText = this.add.text(this.scale.width - 100, 22, '⏱️ 30', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        backgroundColor: '#000000aa',
-        padding: { x: 12, y: 8 },
-        color: '#FFF8E7',
-        borderRadius: 24
-    }).setScrollFactor(0);
-    
-    // Event timer setiap 1 detik
+    // --- TIMER 30 DETIK (hanya update DOM, tidak tampil di canvas) ---
     timerEvent = this.time.addEvent({
         delay: 1000,
         callback: updateTimer,
         callbackScope: this,
         loop: true
     });
-    
-    // --- SKOR TEKS ---
-    scoreText = this.add.text(25, 22, 'Skor: 0', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        backgroundColor: '#000000aa',
-        padding: { x: 14, y: 8 },
-        color: '#FFF8E7',
-        borderRadius: 24
-    }).setScrollFactor(0);
     
     // --- KONTROL ---
     this.input.on('pointermove', (pointer) => {
@@ -231,12 +214,11 @@ function create() {
     }
 }
 
-// Fungsi update timer
+// Fungsi update timer (hanya update DOM)
 function updateTimer() {
     if (!gameActive) return;
     
     timeLeft--;
-    updateTimerDisplay();
     
     // Update DOM timer
     const domTimer = document.getElementById('timer-display');
@@ -252,19 +234,6 @@ function updateTimer() {
             timerCard.classList.remove('critical');
         } else {
             timerCard.classList.remove('warning', 'critical');
-        }
-    }
-    
-    // Update timer di canvas
-    if (timerText) {
-        timerText.setText(`⏱️ ${timeLeft}`);
-        // Warna timer berubah di canvas
-        if (timeLeft <= 5) {
-            timerText.setColor('#ff6666');
-        } else if (timeLeft <= 10) {
-            timerText.setColor('#ffaa66');
-        } else {
-            timerText.setColor('#FFF8E7');
         }
     }
     
@@ -297,7 +266,9 @@ function endGame() {
     }
     
     // Nonaktifkan kontrol kasur
-    kasur.setImmovable(true);
+    if (kasur) {
+        kasur.setImmovable(true);
+    }
     
     // Tampilkan pesan Game Over
     const centerX = this.scale.width / 2;
@@ -331,11 +302,6 @@ function endGame() {
     }).setOrigin(0.5).setScrollFactor(0);
 }
 
-function updateTimerDisplay() {
-    const domTimer = document.getElementById('timer-display');
-    if (domTimer) domTimer.innerText = timeLeft;
-}
-
 function spawnPillow() {
     if (!gameActive) return;
     if (!bantalGroup || !bantalGroup.scene) return;
@@ -355,7 +321,6 @@ function spawnPillow() {
 function updateScoreDisplay() {
     const domScore = document.getElementById('score-display');
     if (domScore) domScore.innerText = score;
-    if (scoreText) scoreText.setText(`Skor: ${score}`);
 }
 
 function update() {
@@ -404,10 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Reset posisi kasur
                 if (kasur) kasur.x = config.width / 2;
                 
-                // Restart timer
-                if (scene.timerText) scene.timerText.setText('⏱️ 30');
-                
-                // Hapus pesan game over (dengan me-restart scene)
+                // Restart scene
                 scene.scene.restart();
             }
         });
