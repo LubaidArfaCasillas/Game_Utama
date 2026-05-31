@@ -11,7 +11,7 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 200 },
+            gravity: { y: 120 },
             debug: false
         }
     },
@@ -111,7 +111,7 @@ function create() {
     bantalGroup = this.physics.add.group({
         allowGravity: true,
         immovable: false,
-        bounceY: 0.1
+        bounceY: 0.05
     });
     
     // --- TUMBUKAN ---
@@ -137,13 +137,13 @@ function create() {
     
     // --- SPAWN BANTAL ---
     this.time.addEvent({
-        delay: 1200,
+        delay: 1400,
         callback: spawnPillow,
         callbackScope: this,
         loop: true
     });
     
-    // --- TIMER 30 DETIK (hanya update DOM, tidak tampil di canvas) ---
+    // --- TIMER 30 DETIK ---
     timerEvent = this.time.addEvent({
         delay: 1000,
         callback: updateTimer,
@@ -214,18 +214,16 @@ function create() {
     }
 }
 
-// Fungsi update timer (hanya update DOM)
+// Fungsi update timer
 function updateTimer() {
     if (!gameActive) return;
     
     timeLeft--;
     
-    // Update DOM timer
     const domTimer = document.getElementById('timer-display');
     if (domTimer) {
         domTimer.innerText = timeLeft;
         
-        // Efek visual di DOM
         const timerCard = document.querySelector('.timer-card');
         if (timeLeft <= 10) {
             timerCard.classList.add('critical');
@@ -237,7 +235,6 @@ function updateTimer() {
         }
     }
     
-    // Jika waktu habis
     if (timeLeft <= 0) {
         endGame();
     }
@@ -249,12 +246,10 @@ function endGame() {
     
     gameActive = false;
     
-    // Hentikan spawn bantal baru
     if (timerEvent) {
         timerEvent.remove();
     }
     
-    // Hentikan semua bantal yang bergerak
     if (bantalGroup) {
         bantalGroup.setVelocityY(0);
         bantalGroup.children.iterate(bantal => {
@@ -265,12 +260,10 @@ function endGame() {
         });
     }
     
-    // Nonaktifkan kontrol kasur
     if (kasur) {
         kasur.setImmovable(true);
     }
     
-    // Tampilkan pesan Game Over
     const centerX = this.scale.width / 2;
     const centerY = this.scale.height / 2;
     
@@ -302,6 +295,7 @@ function endGame() {
     }).setOrigin(0.5).setScrollFactor(0);
 }
 
+// Fungsi spawn bantal - BANTAL DIPERBESAR
 function spawnPillow() {
     if (!gameActive) return;
     if (!bantalGroup || !bantalGroup.scene) return;
@@ -311,10 +305,10 @@ function spawnPillow() {
     const randomBantal = BANTAL_ASSETS[Math.floor(Math.random() * BANTAL_ASSETS.length)];
     
     let pillow = bantalGroup.create(randX, -20, randomBantal);
-    pillow.setDisplaySize(48, 48);
-    pillow.setCircle(22);
-    pillow.setBounceY(0.05);
-    pillow.setGravityY(200);
+    pillow.setDisplaySize(64, 64);  // DIUBAH: 48x48 → 64x64 (lebih besar)
+    pillow.setCircle(30);            // DIUBAH: 22 → 30 (lingkaran collision lebih besar)
+    pillow.setBounceY(0.03);
+    pillow.setGravityY(120);
     pillow.setCollideWorldBounds(false);
 }
 
@@ -328,9 +322,9 @@ function update() {
     if (!kasur || !cursors) return;
     
     if (cursors.left.isDown) {
-        kasur.x -= 8;
+        kasur.x -= 7;
     } else if (cursors.right.isDown) {
-        kasur.x += 8;
+        kasur.x += 7;
     }
     
     kasur.x = Phaser.Math.Clamp(kasur.x, 50, this.scale.width - 50);
@@ -344,32 +338,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (game && game.scene && game.scene.scenes && game.scene.scenes[0]) {
                 const scene = game.scene.scenes[0];
                 
-                // Hentikan semua event lama
                 if (scene.timerEvent) {
                     scene.timerEvent.remove();
                 }
                 
-                // Bersihkan bantal
                 if (bantalGroup) {
                     bantalGroup.clear(true, true);
                 }
                 
-                // Reset variabel
                 score = 0;
                 timeLeft = 30;
                 gameActive = true;
                 
-                // Reset DOM
                 updateScoreDisplay();
                 const domTimer = document.getElementById('timer-display');
                 if (domTimer) domTimer.innerText = "30";
                 const timerCard = document.querySelector('.timer-card');
                 if (timerCard) timerCard.classList.remove('warning', 'critical');
                 
-                // Reset posisi kasur
                 if (kasur) kasur.x = config.width / 2;
                 
-                // Restart scene
                 scene.scene.restart();
             }
         });
