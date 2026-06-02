@@ -2,8 +2,8 @@
 const config = {
     type: Phaser.AUTO,
     parent: 'game-container',
-    width: 900,
-    height: 600,
+    width: 720,
+    height: 480,
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
@@ -11,7 +11,7 @@ const config = {
     physics: {
         default: 'arcade',
         arcade: {
-            gravity: { y: 120 },
+            gravity: { y: 100 },
             debug: false
         }
     },
@@ -24,7 +24,7 @@ const config = {
 
 // Variabel global game
 let game;
-let kasur;
+let kasurPemain;
 let bantalGroup;
 let score = 0;
 let cursors;
@@ -35,20 +35,25 @@ let timeLeft = 30;
 let timerEvent;
 let gameActive = true;
 
-// Daftar asset bantal
-const BANTAL_ASSETS = ['bantal', 'bantal2'];
+// Highest Score
+let highestScore = localStorage.getItem('bantalHighScore') ? parseInt(localStorage.getItem('bantalHighScore')) : 0;
+
+// Daftar asset bantal yang jatuh
+const BANTAL_JATUH_ASSETS = ['bantal', 'bantal2_bulat'];
 
 // Inisialisasi game
 window.onload = () => {
     game = new Phaser.Game(config);
+    const highestSpan = document.getElementById('highest-score');
+    if (highestSpan) highestSpan.innerText = highestScore;
 };
 
 // Fungsi preload
 function preload() {
     this.load.image('background', 'assets/background.jpg');
-    this.load.image('kasur', 'assets/kasur.png');
+    this.load.image('kasurPemain', 'assets/kasur.png');
     this.load.image('bantal', 'assets/bantal.png');
-    this.load.image('bantal2', 'assets/bantal2.png');
+    this.load.image('bantal2', 'assets/bantal2.png');  // Asset bantal2 akan diolah jadi bulat
 }
 
 // Fungsi create
@@ -57,57 +62,29 @@ function create() {
     gameActive = true;
     timeLeft = 30;
     
-    // Reset tampilan timer di DOM
     const domTimer = document.getElementById('timer-display');
     if (domTimer) domTimer.innerText = "30";
     const timerCard = document.querySelector('.timer-card');
     if (timerCard) timerCard.classList.remove('warning', 'critical');
     
+    const modal = document.getElementById('gameover-modal');
+    if (modal) modal.classList.remove('show');
+    
     // --- LATAR BELAKANG ---
     let bg = this.add.image(0, 0, 'background').setOrigin(0, 0);
     bg.setDisplaySize(this.scale.width, this.scale.height);
     
-    // Dekorasi atas
-    let topBorder = this.add.rectangle(0, 0, this.scale.width, 12, 0x2c1e12, 0.5);
-    topBorder.setOrigin(0, 0);
-    let topLine = this.add.rectangle(0, 12, this.scale.width, 2, 0xf5e7d9, 0.6);
-    topLine.setOrigin(0, 0);
-    
-    // Hiasan bulan
-    let moon = this.add.circle(this.scale.width - 45, 28, 18, 0xfff5b0, 0.7);
-    let moonGlow = this.add.circle(this.scale.width - 45, 28, 24, 0xfff5b0, 0.2);
-    
-    // Hiasan bintang dekoratif
-    for(let i = 0; i < 12; i++) {
-        let starDecor = this.add.circle(
-            Phaser.Math.Between(20, this.scale.width - 20), 
-            Phaser.Math.Between(18, 50), 
-            2, 
-            0xfff5b0, 
-            0.5
-        );
-        this.tweens.add({
-            targets: starDecor,
-            alpha: 0.1,
-            duration: 1500 + Math.random() * 2000,
-            yoyo: true,
-            repeat: -1,
-            delay: Math.random() * 2000
-        });
-    }
-    
-    // Overlay malam
-    const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.15);
+    const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.1);
     overlay.setOrigin(0, 0);
     
-    // --- KASUR ---
-    kasur = this.physics.add.image(this.scale.width / 2, this.scale.height - 70, 'kasur');
-    kasur.setCollideWorldBounds(true);
-    kasur.setImmovable(true);
-    kasur.body.setSize(kasur.width * 0.7, kasur.height * 0.6);
-    kasur.setDisplaySize(130, 70);
+    // --- KASUR PEMAIN ---
+    kasurPemain = this.physics.add.image(this.scale.width / 2, this.scale.height - 55, 'kasurPemain');
+    kasurPemain.setCollideWorldBounds(true);
+    kasurPemain.setImmovable(true);
+    kasurPemain.body.setSize(kasurPemain.width * 0.7, kasurPemain.height * 0.6);
+    kasurPemain.setDisplaySize(110, 60);
     
-    // --- KELOMPOK BANTAL ---
+    // --- KELOMPOK BANTAL JATUH ---
     bantalGroup = this.physics.add.group({
         allowGravity: true,
         immovable: false,
@@ -115,10 +92,10 @@ function create() {
     });
     
     // --- TUMBUKAN ---
-    this.physics.add.collider(kasur, bantalGroup, (kasurObj, bantal) => {
+    this.physics.add.collider(kasurPemain, bantalGroup, (pemain, bantalJatuh) => {
         if (!gameActive) return;
         
-        bantal.destroy();
+        bantalJatuh.destroy();
         score++;
         updateScoreDisplay();
         
@@ -127,9 +104,9 @@ function create() {
         }
         
         scene.tweens.add({
-            targets: kasurObj,
-            y: kasurObj.y - 4,
-            duration: 50,
+            targets: pemain,
+            y: pemain.y - 3,
+            duration: 40,
             yoyo: true,
             repeat: 0
         });
@@ -137,13 +114,13 @@ function create() {
     
     // --- SPAWN BANTAL ---
     this.time.addEvent({
-        delay: 1400,
+        delay: 1300,
         callback: spawnPillow,
         callbackScope: this,
         loop: true
     });
     
-    // --- TIMER 30 DETIK ---
+    // --- TIMER ---
     timerEvent = this.time.addEvent({
         delay: 1000,
         callback: updateTimer,
@@ -155,15 +132,15 @@ function create() {
     this.input.on('pointermove', (pointer) => {
         if (!gameActive) return;
         let newX = pointer.worldX;
-        newX = Phaser.Math.Clamp(newX, 50, this.scale.width - 50);
-        kasur.x = newX;
+        newX = Phaser.Math.Clamp(newX, 40, this.scale.width - 40);
+        kasurPemain.x = newX;
     });
     
     this.input.on('touchmove', (pointer) => {
         if (!gameActive) return;
         let newX = pointer.worldX;
-        newX = Phaser.Math.Clamp(newX, 50, this.scale.width - 50);
-        kasur.x = newX;
+        newX = Phaser.Math.Clamp(newX, 40, this.scale.width - 40);
+        kasurPemain.x = newX;
     });
     
     cursors = this.input.keyboard.createCursorKeys();
@@ -195,26 +172,86 @@ function create() {
     }
     
     // --- BINTANG LANGIT ---
-    for(let i = 0; i < 35; i++) {
+    for(let i = 0; i < 25; i++) {
         let star = this.add.circle(
-            Phaser.Math.Between(30, this.scale.width - 30), 
-            Phaser.Math.Between(20, 100), 
-            1.5, 
+            Phaser.Math.Between(15, this.scale.width - 15), 
+            Phaser.Math.Between(10, 70), 
+            1.2, 
             0xfff5b0, 
-            0.6
+            0.4
         );
         this.tweens.add({
             targets: star,
-            alpha: 0.1,
+            alpha: 0.05,
             duration: 2000 + Math.random() * 3000,
             yoyo: true,
             repeat: -1,
-            delay: Math.random() * 3000
+            delay: Math.random() * 2000
         });
     }
+    
+    // --- BUAT TEXTURE BANTAL2 YANG BULAT (memotong bantal2.png menjadi lingkaran) ---
+    createCircularBantal2Texture(this);
 }
 
-// Fungsi update timer
+// Fungsi membuat bantal2 menjadi bulat (memotong asset menjadi lingkaran)
+function createCircularBantal2Texture(scene) {
+    // Ambil asset bantal2 yang sudah di-load
+    const originalTexture = scene.textures.get('bantal2');
+    const width = originalTexture.getSourceImage().width;
+    const height = originalTexture.getSourceImage().height;
+    const size = Math.min(width, height);
+    
+    // Buat canvas temporary
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    
+    // Gambar asset ke canvas
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    
+    // Gambar gambar asli di tengah
+    const offsetX = (size - width) / 2;
+    const offsetY = (size - height) / 2;
+    const img = originalTexture.getSourceImage();
+    ctx.drawImage(img, offsetX, offsetY);
+    ctx.restore();
+    
+    // Tambahkan outline tipis agar terlihat rapi
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2 - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = '#c4a87c';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Generate texture baru
+    scene.textures.addImage('bantal2_bulat', canvas);
+}
+
+// Fungsi spawn bantal - menggunakan bantal.png dan bantal2_bulat (yang sudah bulat)
+function spawnPillow() {
+    if (!gameActive) return;
+    if (!bantalGroup || !bantalGroup.scene) return;
+    
+    const scene = bantalGroup.scene;
+    const randX = Phaser.Math.Between(40, scene.scale.width - 40);
+    
+    // Pilih asset bantal secara acak (50% bantal.png, 50% bantal2_bulat)
+    const randomBantal = BANTAL_JATUH_ASSETS[Math.floor(Math.random() * BANTAL_JATUH_ASSETS.length)];
+    
+    let pillow = bantalGroup.create(randX, -15, randomBantal);
+    pillow.setDisplaySize(50, 50);
+    pillow.setCircle(25);  // Collision lingkaran
+    pillow.setBounceY(0.03);
+    pillow.setGravityY(100);
+    pillow.setCollideWorldBounds(false);
+}
+
 function updateTimer() {
     if (!gameActive) return;
     
@@ -240,15 +277,12 @@ function updateTimer() {
     }
 }
 
-// Fungsi mengakhiri game
 function endGame() {
     if (!gameActive) return;
     
     gameActive = false;
     
-    if (timerEvent) {
-        timerEvent.remove();
-    }
+    if (timerEvent) timerEvent.remove();
     
     if (bantalGroup) {
         bantalGroup.setVelocityY(0);
@@ -260,56 +294,25 @@ function endGame() {
         });
     }
     
-    if (kasur) {
-        kasur.setImmovable(true);
+    if (kasurPemain) kasurPemain.setImmovable(true);
+    
+    if (score > highestScore) {
+        highestScore = score;
+        localStorage.setItem('bantalHighScore', highestScore);
     }
     
-    const centerX = this.scale.width / 2;
-    const centerY = this.scale.height / 2;
-    
-    this.add.text(centerX, centerY - 50, '⏰ WAKTU HABIS! ⏰', {
-        fontFamily: 'monospace',
-        fontSize: '36px',
-        backgroundColor: '#000000cc',
-        padding: { x: 20, y: 12 },
-        color: '#ffcc88',
-        borderRadius: 30
-    }).setOrigin(0.5).setScrollFactor(0);
-    
-    this.add.text(centerX, centerY + 20, `Skor Akhir: ${score}`, {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        backgroundColor: '#000000aa',
-        padding: { x: 20, y: 10 },
-        color: '#FFF8E7',
-        borderRadius: 30
-    }).setOrigin(0.5).setScrollFactor(0);
-    
-    this.add.text(centerX, centerY + 80, 'Klik "MULAI ULANG" untuk bermain lagi', {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        backgroundColor: '#00000088',
-        padding: { x: 15, y: 8 },
-        color: '#dddddd',
-        borderRadius: 20
-    }).setOrigin(0.5).setScrollFactor(0);
+    showGameOverModal(score, highestScore);
 }
 
-// Fungsi spawn bantal - BANTAL DIPERBESAR
-function spawnPillow() {
-    if (!gameActive) return;
-    if (!bantalGroup || !bantalGroup.scene) return;
+function showGameOverModal(currentScore, highScore) {
+    const modal = document.getElementById('gameover-modal');
+    const finalScoreSpan = document.getElementById('final-score');
+    const highestScoreSpan = document.getElementById('highest-score');
     
-    const scene = bantalGroup.scene;
-    const randX = Phaser.Math.Between(50, scene.scale.width - 50);
-    const randomBantal = BANTAL_ASSETS[Math.floor(Math.random() * BANTAL_ASSETS.length)];
+    if (finalScoreSpan) finalScoreSpan.innerText = currentScore;
+    if (highestScoreSpan) highestScoreSpan.innerText = highScore;
     
-    let pillow = bantalGroup.create(randX, -20, randomBantal);
-    pillow.setDisplaySize(64, 64);  // DIUBAH: 48x48 → 64x64 (lebih besar)
-    pillow.setCircle(30);            // DIUBAH: 22 → 30 (lingkaran collision lebih besar)
-    pillow.setBounceY(0.03);
-    pillow.setGravityY(120);
-    pillow.setCollideWorldBounds(false);
+    if (modal) modal.classList.add('show');
 }
 
 function updateScoreDisplay() {
@@ -319,47 +322,47 @@ function updateScoreDisplay() {
 
 function update() {
     if (!gameActive) return;
-    if (!kasur || !cursors) return;
+    if (!kasurPemain || !cursors) return;
     
     if (cursors.left.isDown) {
-        kasur.x -= 7;
+        kasurPemain.x -= 6;
     } else if (cursors.right.isDown) {
-        kasur.x += 7;
+        kasurPemain.x += 6;
     }
     
-    kasur.x = Phaser.Math.Clamp(kasur.x, 50, this.scale.width - 50);
+    kasurPemain.x = Phaser.Math.Clamp(kasurPemain.x, 40, this.scale.width - 40);
 }
 
-// Tombol reset
+function resetGame() {
+    if (game && game.scene && game.scene.scenes && game.scene.scenes[0]) {
+        const scene = game.scene.scenes[0];
+        
+        if (scene.timerEvent) scene.timerEvent.remove();
+        if (bantalGroup) bantalGroup.clear(true, true);
+        
+        score = 0;
+        timeLeft = 30;
+        gameActive = true;
+        
+        updateScoreDisplay();
+        const domTimer = document.getElementById('timer-display');
+        if (domTimer) domTimer.innerText = "30";
+        const timerCard = document.querySelector('.timer-card');
+        if (timerCard) timerCard.classList.remove('warning', 'critical');
+        
+        if (kasurPemain) kasurPemain.x = config.width / 2;
+        
+        const modal = document.getElementById('gameover-modal');
+        if (modal) modal.classList.remove('show');
+        
+        scene.scene.restart();
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-button');
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            if (game && game.scene && game.scene.scenes && game.scene.scenes[0]) {
-                const scene = game.scene.scenes[0];
-                
-                if (scene.timerEvent) {
-                    scene.timerEvent.remove();
-                }
-                
-                if (bantalGroup) {
-                    bantalGroup.clear(true, true);
-                }
-                
-                score = 0;
-                timeLeft = 30;
-                gameActive = true;
-                
-                updateScoreDisplay();
-                const domTimer = document.getElementById('timer-display');
-                if (domTimer) domTimer.innerText = "30";
-                const timerCard = document.querySelector('.timer-card');
-                if (timerCard) timerCard.classList.remove('warning', 'critical');
-                
-                if (kasur) kasur.x = config.width / 2;
-                
-                scene.scene.restart();
-            }
-        });
-    }
+    if (resetBtn) resetBtn.addEventListener('click', resetGame);
+    
+    const modalResetBtn = document.getElementById('modal-reset-btn');
+    if (modalResetBtn) modalResetBtn.addEventListener('click', resetGame);
 });

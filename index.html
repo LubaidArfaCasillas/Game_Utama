@@ -22,10 +22,28 @@
             </div>
             <button id="reset-button">🌙 MULAI ULANG 🌙</button>
         </div>
-        
-        <div class="instruction">
-            🎮 <strong>Cara Main:</strong> Geser mouse ← → atau sentuh layar untuk menggerakkan kasur.<br>
-            📌 Tangkap bantal sebanyak-banyaknya dalam 30 detik!
+    </div>
+
+    <!-- MODAL GAME OVER -->
+    <div id="gameover-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="modal-icon">⏰</span>
+                <h2>GAME OVER</h2>
+            </div>
+            <div class="modal-body">
+                <div class="score-row">
+                    <span class="score-label">✨ Skor Kamu</span>
+                    <span class="score-value" id="final-score">0</span>
+                </div>
+                <div class="score-row highest">
+                    <span class="score-label">🏆 Skor Tertinggi</span>
+                    <span class="score-value" id="highest-score">0</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-reset-btn">🌙 MAIN LAGI 🌙</button>
+            </div>
         </div>
     </div>
 
