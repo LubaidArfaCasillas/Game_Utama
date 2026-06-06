@@ -77,12 +77,11 @@ function create() {
     const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x0a1030, 0.1);
     overlay.setOrigin(0, 0);
     
-    // --- KASUR PEMAIN ---
     kasurPemain = this.physics.add.image(this.scale.width / 2, this.scale.height - 55, 'kasurPemain');
+    kasurPemain.setDisplaySize(110, 60);
     kasurPemain.setCollideWorldBounds(true);
     kasurPemain.setImmovable(true);
-    kasurPemain.body.setSize(kasurPemain.width * 0.7, kasurPemain.height * 0.6);
-    kasurPemain.setDisplaySize(110, 60);
+    kasurPemain.body.setSize(kasurPemain.width, kasurPemain.height * 0.8);
     
     // --- KELOMPOK BANTAL JATUH ---
     bantalGroup = this.physics.add.group({
